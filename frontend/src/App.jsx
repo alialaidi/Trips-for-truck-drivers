@@ -117,14 +117,27 @@ export default function App() {
     setLoading(true);
     setError("");
     setResult(null);
-    try {
-      const res = await axios.post(API, form);
-      setResult(res.data);
-    } catch (err) {
-      setError(err.response?.data?.error || "Could not reach the server");
-    } finally {
-      setLoading(false);
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await axios.post(API, form, { timeout: 60000 });
+        setResult(res.data);
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (err.response?.status === 400) break; // مدخلات غلط، الإعادة ما بتفيد
+      }
     }
+    if (lastErr) {
+      setError(
+        lastErr.response?.data?.error ||
+          (lastErr.response
+            ? `Server error (${lastErr.response.status})`
+            : "Could not reach the server"),
+      );
+    }
+    setLoading(false);
   };
 
   return (

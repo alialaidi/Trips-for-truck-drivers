@@ -14,17 +14,11 @@ import LogSheet from "./LogSheet";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/plan/";
 
-function FitBounds({ positions }) {
-  const map = useMap();
-  useEffect(() => {
-    map.fitBounds(positions, { padding: [30, 30] });
-  }, [positions, map]);
-  return null;
-}
-
-const clock = (m) => {
-  const t = Math.round(m);
-  return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+const EXAMPLE = {
+  current_location: "Chicago, IL",
+  pickup_location: "Indianapolis, IN",
+  dropoff_location: "Dallas, TX",
+  cycle_used_hours: 20,
 };
 
 const STOP_COLORS = {
@@ -33,6 +27,19 @@ const STOP_COLORS = {
   "10-hour rest": "#0550ae",
   "34-hour restart": "#bc4c00",
 };
+
+const clock = (m) => {
+  const t = Math.round(m);
+  return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+};
+
+function FitBounds({ positions }) {
+  const map = useMap();
+  useEffect(() => {
+    map.fitBounds(positions, { padding: [30, 30] });
+  }, [positions, map]);
+  return null;
+}
 
 function ResultMap({ result }) {
   const positions = useMemo(
@@ -52,7 +59,7 @@ function ResultMap({ result }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
-        <Polyline positions={positions} color="#1f6feb" weight={5} />
+        <Polyline positions={positions} color="#1b4f9c" weight={5} />
         {result.stops.map((s, i) => (
           <CircleMarker
             key={i}
@@ -65,7 +72,7 @@ function ResultMap({ result }) {
               fillOpacity: 1,
             }}
           >
-            <Tooltip>{`${s.type} · Day ${s.day} · ${clock(s.start)} · mile ${Math.round(s.mile)}`}</Tooltip>
+            <Tooltip>{`${s.type}, day ${s.day}, ${clock(s.start)}, mile ${Math.round(s.mile)}`}</Tooltip>
           </CircleMarker>
         ))}
         {points.map(({ p, label, color }) => (
@@ -109,6 +116,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [activeDay, setActiveDay] = useState(0);
 
   const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -122,6 +130,7 @@ export default function App() {
       try {
         const res = await axios.post(API, form, { timeout: 60000 });
         setResult(res.data);
+        setActiveDay(0);
         lastErr = null;
         break;
       } catch (err) {
@@ -133,110 +142,175 @@ export default function App() {
       setError(
         lastErr.response?.data?.error ||
           (lastErr.response
-            ? `Server error (${lastErr.response.status})`
-            : "Could not reach the server"),
+            ? `The server returned an error (${lastErr.response.status}). Try again in a moment.`
+            : "Could not reach the server. Check your connection and try again."),
       );
     }
     setLoading(false);
   };
 
+  const day = result ? (result.days[activeDay] ?? result.days[0]) : null;
+
   return (
-    <div className="app">
-      <h1>ELD Trip Planner</h1>
+    <>
+      <header className="topbar">
+        <div className="topbar-inner">
+          <h1 className="brand">ELD Trip Planner</h1>
+          <span className="tagline">
+            Route, stops and daily logs for a property-carrying driver
+          </span>
+        </div>
+        <div className="centerline" aria-hidden="true" />
+      </header>
 
-      <form className="card" onSubmit={submit}>
-        <label>
-          Current location
-          <input
-            name="current_location"
-            value={form.current_location}
-            onChange={update}
-            placeholder="Chicago, IL"
-            required
-          />
-        </label>
-        <label>
-          Pickup location
-          <input
-            name="pickup_location"
-            value={form.pickup_location}
-            onChange={update}
-            placeholder="Indianapolis, IN"
-            required
-          />
-        </label>
-        <label>
-          Dropoff location
-          <input
-            name="dropoff_location"
-            value={form.dropoff_location}
-            onChange={update}
-            placeholder="Dallas, TX"
-            required
-          />
-        </label>
-        <label>
-          Current cycle used (hrs)
-          <input
-            name="cycle_used_hours"
-            type="number"
-            min="0"
-            max="70"
-            step="0.5"
-            value={form.cycle_used_hours}
-            onChange={update}
-            required
-          />
-        </label>
-        <button disabled={loading}>
-          {loading ? "Planning..." : "Plan trip"}
-        </button>
-      </form>
-      {error && <div className="error">{error}</div>}
+      <div className="layout">
+        <aside className="side">
+          <form className="panel slip" onSubmit={submit}>
+            <h2>Trip details</h2>
+            <label>
+              Current location
+              <input
+                name="current_location"
+                value={form.current_location}
+                onChange={update}
+                placeholder="Chicago, IL"
+                autoComplete="off"
+                required
+              />
+            </label>
+            <label>
+              Pickup location
+              <input
+                name="pickup_location"
+                value={form.pickup_location}
+                onChange={update}
+                placeholder="Indianapolis, IN"
+                autoComplete="off"
+                required
+              />
+            </label>
+            <label>
+              Dropoff location
+              <input
+                name="dropoff_location"
+                value={form.dropoff_location}
+                onChange={update}
+                placeholder="Dallas, TX"
+                autoComplete="off"
+                required
+              />
+            </label>
+            <label>
+              Current cycle used (hours)
+              <input
+                name="cycle_used_hours"
+                type="number"
+                min="0"
+                max="70"
+                step="0.5"
+                value={form.cycle_used_hours}
+                onChange={update}
+                required
+              />
+              <span className="hint">
+                Hours already used in the 70-hour, 8-day cycle.
+              </span>
+            </label>
+            <button className="btn" disabled={loading}>
+              {loading ? "Planning route…" : "Plan trip"}
+            </button>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setForm(EXAMPLE)}
+              disabled={loading}
+            >
+              Fill in an example trip
+            </button>
+            {loading && (
+              <p className="hint">
+                The first request can take up to 15 seconds.
+              </p>
+            )}
+            {error && (
+              <div className="error" role="alert">
+                {error}
+              </div>
+            )}
+          </form>
 
-      {result && (
-        <>
-          <div className="card">
-            <strong>{result.distance_miles} miles</strong> ·{" "}
-            {result.days.length} day(s) · avg {result.avg_speed_mph} mph
-          </div>
-          <div className="card">
-            <ResultMap result={result} />
-          </div>
-          <div className="card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Day</th>
-                  <th>Miles</th>
-                  <th>Driving</th>
-                  <th>On duty</th>
-                  <th>Off duty</th>
-                  <th>Sleeper</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.days.map((d) => (
-                  <tr key={d.day}>
-                    <td>{d.day}</td>
-                    <td>{d.miles}</td>
-                    <td>{d.totals_hours.driving}</td>
-                    <td>{d.totals_hours.on_duty}</td>
-                    <td>{d.totals_hours.off_duty}</td>
-                    <td>{d.totals_hours.sleeper}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {result && (
+            <section className="panel">
+              <h2>Trip summary</h2>
+              <dl className="facts">
+                <div>
+                  <dt>Distance</dt>
+                  <dd>{result.distance_miles} mi</dd>
+                </div>
+                <div>
+                  <dt>Days on the road</dt>
+                  <dd>{result.days.length}</dd>
+                </div>
+                <div>
+                  <dt>Average speed</dt>
+                  <dd>{result.avg_speed_mph} mph</dd>
+                </div>
+                <div>
+                  <dt>Stops and rests</dt>
+                  <dd>{result.stops.length}</dd>
+                </div>
+              </dl>
+            </section>
+          )}
+        </aside>
 
-          {result.days.map((d) => (
-            <div className="card" key={d.day}>
-              <LogSheet day={d} />
-            </div>
-          ))}
-        </>
-      )}
-    </div>
+        <main className="main">
+          {!result && (
+            <section className="panel empty">
+              <h2>
+                {loading
+                  ? "Planning your route"
+                  : "Your route and logs will appear here"}
+              </h2>
+              <p>
+                {loading
+                  ? "Finding the route, then scheduling fuel stops and rest breaks around the hours-of-service limits."
+                  : "Enter where the driver is, where the load is picked up and where it goes. You get the route with fuel stops and rests, plus a filled-out daily log for each day."}
+              </p>
+            </section>
+          )}
+
+          {result && (
+            <>
+              <section className="panel">
+                <h2>Route and stops</h2>
+                <ResultMap result={result} />
+              </section>
+
+              <section className="panel">
+                <h2>Daily logs</h2>
+                <div className="tabs" role="tablist">
+                  {result.days.map((d, i) => (
+                    <button
+                      key={d.day}
+                      role="tab"
+                      aria-selected={i === activeDay}
+                      className="tab"
+                      onClick={() => setActiveDay(i)}
+                    >
+                      Day {d.day}
+                      <small>{d.miles} mi driven</small>
+                    </button>
+                  ))}
+                </div>
+                <div className="sheet">
+                  <LogSheet day={day} />
+                </div>
+              </section>
+            </>
+          )}
+        </main>
+      </div>
+    </>
   );
 }

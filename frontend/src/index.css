@@ -1,64 +1,25 @@
-.app {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px;
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap");
+
+:root {
+  --asphalt: #1d232a;
+  --concrete: #e9edf0;
+  --paper: #fffefb;
+  --lane: #f2b705;
+  --ink: #1b4f9c;
+  --line: #cdd5db;
+  --muted: #5b6670;
+  --danger: #b42318;
 }
-h1 {
-  margin: 0 0 16px;
+
+* {
+  box-sizing: border-box;
 }
-.card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  margin-bottom: 16px;
-}
-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  align-items: end;
-}
-label {
-  display: flex;
-  flex-direction: column;
-  font-size: 14px;
-  gap: 4px;
-}
-input {
-  padding: 10px;
-  border: 1px solid #c9d1d9;
-  border-radius: 8px;
-  font-size: 15px;
-}
-button {
-  padding: 11px;
-  border: 0;
-  border-radius: 8px;
-  background: #1f6feb;
-  color: #fff;
-  font-size: 15px;
-  cursor: pointer;
-}
-button:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-.error {
-  color: #b42318;
-  margin-top: 8px;
-}
-.map {
-  height: 460px;
-  border-radius: 12px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th,
-td {
-  padding: 8px;
-  text-align: left;
-  border-bottom: 1px solid #e5e9ee;
+
+body {
+  margin: 0;
+  font-family: "Barlow", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  background: var(--concrete);
+  color: var(--asphalt);
 }

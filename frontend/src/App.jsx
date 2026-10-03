@@ -12,7 +12,7 @@ import "leaflet/dist/leaflet.css";
 import "./App.css";
 import LogSheet from "./LogSheet";
 
-const API = "http://127.0.0.1:8000/api/plan/";
+const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/plan/";
 
 function FitBounds({ positions }) {
   const map = useMap();

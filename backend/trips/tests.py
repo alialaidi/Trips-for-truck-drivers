@@ -1,5 +1,7 @@
 from django.test import SimpleTestCase
 from .scheduler import plan_trip
+from .geo import RouteLine
+from .scheduler import plan_trip, collect_stops
 
 
 class SchedulerTests(SimpleTestCase):
@@ -18,3 +20,14 @@ class SchedulerTests(SimpleTestCase):
         days = plan_trip(100, 800, 55, 65)
         notes = [s["note"] for d in days for s in d["segments"]]
         self.assertIn("34-hour restart", notes)
+        
+    def test_fuel_stop_within_1000_miles(self):
+        days = plan_trip(100, 1500, 55, 20)
+        fuel = [s for s in collect_stops(days) if s["type"] == "Fuel stop"]
+        self.assertEqual(len(fuel), 1)
+        self.assertLessEqual(fuel[0]["mile"], 1000.5)
+
+    def test_route_line_interpolates(self):
+        line = RouteLine([[0, 0], [1, 0], [2, 0]], total_miles=138)
+        lat, lng = line.point_at(69)
+        self.assertAlmostEqual(lng, 1.0, places=1)

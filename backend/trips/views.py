@@ -1,4 +1,6 @@
 import requests
+from .geo import RouteLine
+from .scheduler import plan_trip, collect_stops
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -39,10 +41,16 @@ def plan(request):
 
     days = plan_trip(leg1_miles, leg2_miles, speed, cycle_used)
 
+    line = RouteLine(route["geometry"]["coordinates"], total_miles)
+    stops = collect_stops(days)
+    for s in stops:
+        s["lat"], s["lng"] = line.point_at(s["mile"])
+
     return Response({
         "locations": {"current": current, "pickup": pickup, "dropoff": dropoff},
         "route": route["geometry"]["coordinates"],  # [[lng, lat], ...]
         "distance_miles": round(total_miles, 1),
         "avg_speed_mph": round(speed, 1),
         "days": days,
+        "stops": stops,
     })

@@ -19,12 +19,15 @@ const y = (status) => TOP + ROWS.indexOf(status) * ROW_H + ROW_H / 2;
 const hourLabel = (h) =>
   h === 0 || h === 24 ? "Mid" : h === 12 ? "Noon" : h > 12 ? h - 12 : h;
 
+export const placeKey = (lat, lng) =>
+  lat == null ? "" : `${lat.toFixed(2)},${lng.toFixed(2)}`;
+
 const fmt = (m) => {
   const t = Math.round(m);
   return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 };
 
-export default function LogSheet({ day }) {
+export default function LogSheet({ day, places }) {
   // خط واحد متصل: أفقي لكل فترة، وعمودي عند تغيير الحالة
   const path = day.segments
     .map(
@@ -135,6 +138,11 @@ export default function LogSheet({ day }) {
               {fmt(s.start)}–{fmt(s.end)}
             </time>
             <span>{s.note}</span>
+            <em>
+              {places === null
+                ? "Locating…"
+                : places?.[placeKey(s.lat, s.lng)] || ""}
+            </em>
           </li>
         ))}
       </ul>

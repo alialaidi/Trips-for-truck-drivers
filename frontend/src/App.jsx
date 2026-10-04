@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import {
   MapContainer,
@@ -10,9 +10,10 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "./App.css";
-import LogSheet from "./LogSheet";
+import LogSheet, { placeKey } from "./LogSheet";
 
 const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/plan/";
+const PLACES_API = API.replace(/plan\/?$/, "places/");
 
 const EXAMPLE = {
   current_location: "Chicago, IL",
@@ -117,20 +118,50 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(0);
+  const [places, setPlaces] = useState(null);
+  const runId = useRef(0);
 
   const update = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const loadPlaces = async (data, id) => {
+    const unique = new Map();
+    data.days.forEach((d) =>
+      d.segments.forEach((s) => {
+        if (s.note && s.lat != null)
+          unique.set(placeKey(s.lat, s.lng), { lat: s.lat, lng: s.lng });
+      }),
+    );
+    const entries = [...unique.entries()];
+    const found = {};
+    try {
+      const res = await axios.post(
+        PLACES_API,
+        { points: entries.map(([, p]) => p) },
+        { timeout: 120000 },
+      );
+      entries.forEach(([key], i) => {
+        if (res.data.places[i]) found[key] = res.data.places[i];
+      });
+    } catch {
+      // الأماكن اختيارية: السجل يضل شغّال بدونها
+    }
+    if (runId.current === id) setPlaces(found);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    const id = ++runId.current;
     setLoading(true);
     setError("");
     setResult(null);
+    setPlaces(null);
     let lastErr = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const res = await axios.post(API, form, { timeout: 60000 });
         setResult(res.data);
         setActiveDay(0);
+        loadPlaces(res.data, id);
         lastErr = null;
         break;
       } catch (err) {
@@ -323,7 +354,7 @@ export default function App() {
                   ))}
                 </div>
                 <div className="sheet">
-                  <LogSheet day={day} />
+                  <LogSheet day={day} places={places} />
                 </div>
               </section>
             </>

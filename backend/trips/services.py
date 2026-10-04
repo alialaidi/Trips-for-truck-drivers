@@ -55,3 +55,27 @@ def get_route(points):
     if data.get("code") != "Ok":
         raise ValueError("No route found between these locations")
     return data["routes"][0]
+
+PLACE_KEYS = ("city", "town", "village", "hamlet", "municipality", "county")
+
+
+@lru_cache(maxsize=512)
+def _reverse_cached(lat, lng):
+    r = _get(
+        "https://nominatim.openstreetmap.org/reverse",
+        params={"lat": lat, "lon": lng, "format": "jsonv2", "zoom": 10, "addressdetails": 1},
+        headers=HEADERS,
+        timeout=10,
+    )
+    data = r.json()
+    time.sleep(1)  # سياسة Nominatim: طلب واحد بالثانية
+    addr = data.get("address", {})
+    place = next((addr[k] for k in PLACE_KEYS if addr.get(k)), "")
+    region = (addr.get("ISO3166-2-lvl4") or "").split("-")[-1] or addr.get("state", "")
+    if place and region:
+        return f"{place}, {region}"
+    return place or region or "Unknown location"
+
+
+def reverse_geocode(lat, lng):
+    return _reverse_cached(round(float(lat), 2), round(float(lng), 2))

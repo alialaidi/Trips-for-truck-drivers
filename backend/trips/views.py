@@ -3,10 +3,9 @@ from .geo import RouteLine
 from .scheduler import plan_trip, collect_stops
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-
-from .scheduler import plan_trip
-from .services import geocode, get_route
 from .instructions import build_instructions
+from .services import geocode, get_route, reverse_geocode
+
 
 METERS_PER_MILE = 1609.344
 TRUCK_MAX_SPEED = 55  # mph
@@ -47,12 +46,30 @@ def plan(request):
     for s in stops:
         s["lat"], s["lng"] = line.point_at(s["mile"])
 
+    for d in days:
+        for seg in d["segments"]:
+            seg["lat"], seg["lng"] = line.point_at(seg["mile_start"])
+
     return Response({
         "locations": {"current": current, "pickup": pickup, "dropoff": dropoff},
-        "route": route["geometry"]["coordinates"],  # [[lng, lat], ...]
+        "route": route["geometry"]["coordinates"],
         "distance_miles": round(total_miles, 1),
         "avg_speed_mph": round(speed, 1),
         "days": days,
         "stops": stops,
         "instructions": build_instructions(route),
     })
+
+
+@api_view(["POST"])
+def places(request):
+    points = request.data.get("points")
+    if not isinstance(points, list):
+        return Response({"error": "points must be a list"}, status=400)
+    out = []
+    for p in points[:40]:
+        try:
+            out.append(reverse_geocode(p["lat"], p["lng"]))
+        except (KeyError, TypeError, ValueError, requests.RequestException):
+            out.append("")
+    return Response({"places": out})

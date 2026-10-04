@@ -3,6 +3,8 @@ from .scheduler import plan_trip
 from .geo import RouteLine
 from .scheduler import plan_trip, collect_stops
 from .instructions import describe_step
+from unittest.mock import MagicMock, patch
+from . import services
 
 
 class SchedulerTests(SimpleTestCase):
@@ -36,3 +38,10 @@ class SchedulerTests(SimpleTestCase):
     def test_describe_step(self):
         step = {"maneuver": {"type": "turn", "modifier": "right"}, "name": "Main St"}
         self.assertEqual(describe_step(step), "Turn right onto Main St")
+
+    def test_reverse_geocode_formats_city_and_state(self):
+        services._reverse_cached.cache_clear()
+        fake = MagicMock()
+        fake.json.return_value = {"address": {"city": "Peoria", "ISO3166-2-lvl4": "US-IL"}}
+        with patch("trips.services._get", return_value=fake), patch("trips.services.time.sleep"):
+            self.assertEqual(services.reverse_geocode(40.69, -89.59), "Peoria, IL")

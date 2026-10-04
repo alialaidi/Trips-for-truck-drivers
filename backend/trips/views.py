@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from .scheduler import plan_trip
 from .services import geocode, get_route
+from .instructions import build_instructions
 
 METERS_PER_MILE = 1609.344
 TRUCK_MAX_SPEED = 55  # mph
@@ -53,4 +54,5 @@ def plan(request):
         "avg_speed_mph": round(speed, 1),
         "days": days,
         "stops": stops,
+        "instructions": build_instructions(route),
     })

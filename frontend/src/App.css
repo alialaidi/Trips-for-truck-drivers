@@ -289,3 +289,38 @@ button:focus-visible {
     display: none;
   }
 }
+
+.leg {
+  border-top: 1px solid var(--line);
+}
+.leg:first-of-type {
+  border-top: 0;
+}
+.leg summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+}
+.leg summary small {
+  margin-left: 10px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.leg summary:focus-visible {
+  outline: 3px solid var(--lane);
+  outline-offset: 2px;
+}
+.steps {
+  max-height: 300px;
+  overflow: auto;
+  margin: 0 0 12px;
+  padding-left: 24px;
+  font-size: 14px;
+}
+.steps li {
+  margin: 3px 0;
+}
+.steps span {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

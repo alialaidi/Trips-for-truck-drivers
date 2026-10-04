@@ -288,6 +288,25 @@ export default function App() {
               </section>
 
               <section className="panel">
+                <h2>Route instructions</h2>
+                {result.instructions.map((leg, i) => (
+                  <details key={leg.leg} className="leg" open={i === 0}>
+                    <summary>
+                      {leg.leg}
+                      <small>{leg.steps.length} steps</small>
+                    </summary>
+                    <ol className="steps">
+                      {leg.steps.map((s, j) => (
+                        <li key={j}>
+                          {s.text} <span>{s.miles} mi</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </details>
+                ))}
+              </section>
+
+              <section className="panel">
                 <h2>Daily logs</h2>
                 <div className="tabs" role="tablist">
                   {result.days.map((d, i) => (

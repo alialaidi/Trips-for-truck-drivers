@@ -2,6 +2,7 @@ from django.test import SimpleTestCase
 from .scheduler import plan_trip
 from .geo import RouteLine
 from .scheduler import plan_trip, collect_stops
+from .instructions import describe_step
 
 
 class SchedulerTests(SimpleTestCase):
@@ -31,3 +32,7 @@ class SchedulerTests(SimpleTestCase):
         line = RouteLine([[0, 0], [1, 0], [2, 0]], total_miles=138)
         lat, lng = line.point_at(69)
         self.assertAlmostEqual(lng, 1.0, places=1)
+    
+    def test_describe_step(self):
+        step = {"maneuver": {"type": "turn", "modifier": "right"}, "name": "Main St"}
+        self.assertEqual(describe_step(step), "Turn right onto Main St")

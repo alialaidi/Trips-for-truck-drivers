@@ -48,7 +48,7 @@ def get_route(points):
     coords = ";".join(f"{p['lng']},{p['lat']}" for p in points)
     r = _get(
         f"https://router.project-osrm.org/route/v1/driving/{coords}",
-        params={"overview": "full", "geometries": "geojson"},
+        params={"overview": "full", "geometries": "geojson", "steps": "true"},
         timeout=30,
     )
     data = r.json()
